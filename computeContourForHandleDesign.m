@@ -15,7 +15,6 @@ START_X2 = 50;
 END_X2 = 150;
 LABEL_X1 = 'hand length (mm)';
 LABEL_X2 = 'hand breadth (mm)';
-BANDWIDTH_FACTOR_SILVERMAN = 1;
 
 female = importAnsurFile('ANSUR_II_FEMALE_Public.csv', 2, 21);
 male = importAnsurFile('ANSUR_II_MALE_Public.csv', 2, 21);
@@ -30,14 +29,19 @@ combined.date = [female.date; male.date];
 combined.subjectsBirthLocation = [female.subjectsBirthLocation; male.subjectsBirthLocation];
 combined.age = [female.age; male.age];
 
-% Choose the bandwidth according to Silverman's rule of thumb. See 
-% https://de.mathworks.com/help/stats/mvksdensity.html for an explanation.
+
 dataX1 = combined.handLength;
 dataX2 = combined.handBreadth;
 sigma = std([dataX1 dataX2]);
 n = length(dataX1);
 d = 2;
-b = BANDWIDTH_FACTOR_SILVERMAN * sigma*(4/((d+2)*n))^(1/(d+4));
+
+% Choose the bandwidth according to 'Silverman's rule of thumb'.
+% The equation is based on Table 4.1 and eq. 4.14 in Silverman (1998).
+% The multiplication with sigma is used since Silverman gives the formula 
+% for a standard distribution. It is a rewritten form of 
+% b = sigma*(4/((d+2)))^(1/(d+4)) * n^(-1/(d+4)). 
+b = sigma*(4/((d+2)*n))^(1/(d+4)); 
 
 % --- Density estimation, f_{DE} ---
 x1Ticks = START_X1:X1_GRID_RESOLUTION:END_X1;
