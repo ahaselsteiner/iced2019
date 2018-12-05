@@ -1,5 +1,5 @@
 %% computeContourForHandleDesign
-% Computes a 99% highest density contour with the variables hand length
+% Computes a 90% highest density contour with the variables hand length
 % and hand width. This script was used for the work presented at ICED 2019.
 
 %% Dependencies
@@ -9,6 +9,7 @@
 
 X1_GRID_RESOLUTION = 0.2; % Reduce the resolution to compute faster.
 X2_GRID_RESOLUTION = 0.1; % Reduce the resolution to compute faster.
+ALPHA = 0.1;
 START_X1 = 100;
 END_X1 = 300;
 START_X2 = 50;
@@ -16,8 +17,8 @@ END_X2 = 150;
 LABEL_X1 = 'hand length (mm)';
 LABEL_X2 = 'hand breadth (mm)';
 
-female = importAnsurFile('ANSUR_II_FEMALE_Public.csv', 2, 21);
-male = importAnsurFile('ANSUR_II_MALE_Public.csv', 2, 21);
+female = importAnsurFile('ANSUR_II_FEMALE_Public.csv', 2, 51);
+male = importAnsurFile('ANSUR_II_MALE_Public.csv', 2, 51);
 
 combined.subjectId = [female.subjectId; male.subjectId];
 combined.handBreadth = [female.handBreadth; male.handBreadth];
@@ -37,13 +38,13 @@ n = length(dataX1);
 d = 2;
 
 % Choose the bandwidth according to 'Silverman's rule of thumb'.
-% The equation is based on Table 4.1 and eq. 4.14 in Silverman (1998).
+% The equation is based on Table 4.1 and Eq. 4.14 in Silverman (1998).
 % The multiplication with sigma is used since Silverman gives the formula 
-% for a standard distribution. It is a rewritten form of 
-% b = sigma*(4/((d+2)))^(1/(d+4)) * n^(-1/(d+4)). 
+% for a standard distribution (sigma = 1). Silverman's equation
+% b = sigma*(4/((d+2)))^(1/(d+4)) * n^(-1/(d+4)) can be rewritten as: 
 b = sigma*(4/((d+2)*n))^(1/(d+4)); 
 
-% --- Density estimation, f_{DE} ---
+% --- Density estimation ---
 x1Ticks = START_X1:X1_GRID_RESOLUTION:END_X1;
 x2Ticks = START_X2:X2_GRID_RESOLUTION:END_X2;
 [x1Grid x2Grid] = meshgrid(x1Ticks, x2Ticks);
@@ -76,10 +77,10 @@ M.cdfGrid = {x1Grid'; x2Grid'};
 M.gridCenterPoints = gridCenterPoints;
 M.labels = {LABEL_X1; LABEL_X2};
 
-% --- Contour construction, f_{CC} ---
-[fm, x1Hdc, x2Hdc] = computeHdc(M, 0.01, M.gridCenterPoints, 0);
+% --- Contour construction ---
+[fm, x1Hdc, x2Hdc] = computeHdc(M, ALPHA, M.gridCenterPoints, 0);
 
-% --- Design condition selection, f_{DC} ---
+% --- Design condition selection ---
 [value i] = max(x1Hdc{1});
 indices = i;
 [value i] = max(x2Hdc{1});
@@ -97,7 +98,7 @@ indices = [indices i];
 x1DC = x1Hdc{1}(indices);
 x2DC = x2Hdc{1}(indices);
 
-% Plot the sample and the design contour
+% --- Plotting ---
 fig = figure();
 plot(female.handLength, female.handBreadth, '+k')
 hold on
@@ -108,7 +109,8 @@ xlabel(LABEL_X1)
 ylabel(LABEL_X2)
 xlim([140 250])
 ylim([55 110])
-legend('female', 'male', '99% highest density contour', 'design conditon', 'location', 'southeast');
+legend('female', 'male', [num2str((1-ALPHA)*100) '% highest density contour'], ...
+    'design conditon', 'location', 'southeast');
 legend boxoff;
 set(fig, 'Units', 'centimeters', 'Position', [0, 0, 10, 8], 'PaperUnits', 'Inches', 'PaperSize', [10 8])
 
